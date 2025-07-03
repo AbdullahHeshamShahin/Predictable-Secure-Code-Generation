@@ -1,94 +1,97 @@
 # Environment Setup Guide
 
-## Setting up Environment Variables
+This guide explains how to properly configure the environment variables for the automated code update system.
 
-To run this application securely, you need to set up environment variables for sensitive configuration like API keys.
+## Quick Setup
 
-### 1. Create a `.env` file
+1. **Copy the template file:**
 
-Create a `.env` file in the root directory of the project (same directory as `config.py`):
+   ```bash
+   cp env.template .env
+   ```
 
-```bash
-# Azure OpenAI Configuration
-AZURE_OPENAI_API_KEY=your_azure_openai_api_key_here
-AZURE_OPENAI_ENDPOINT=https://ai-tum-dev-se-001.openai.azure.com/
-AZURE_OPENAI_API_VERSION=2024-02-01
-AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
+2. **Edit the `.env` file:**
+   Replace the placeholder values with your actual configuration:
+   ```bash
+   nano .env  # or use your preferred editor
+   ```
 
-# Legacy OpenAI Configuration (if needed)
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4
-REGION=swedencentral
+## Required Environment Variables
 
-# AI Parameters (optional - defaults are provided)
-AI_MAX_TOKENS=4000
-AI_TEMPERATURE=0.1
-AI_TOP_P=1.0
-AI_FREQUENCY_PENALTY=0.0
-AI_PRESENCE_PENALTY=0.0
+### Azure OpenAI Configuration (Required)
 
-# File Paths (optional - defaults are provided)
-METADATA_FILE=data/metadata.json
-STATUS_LOG_FILE=data/status_log.json
-IMPLEMENTED_REQUIREMENTS_FILE=../ProjectBase/implementedRequirements.csv
-REQUIREMENTS_FILE=../ProjectBase/requirements.csv
-CODEBASE_ROOT=../ProjectBase/CodeBase/
+- `AZURE_OPENAI_API_KEY`: Your Azure OpenAI API key
+- `AZURE_OPENAI_ENDPOINT`: Your Azure OpenAI endpoint URL
 
-# Validation Settings (optional - defaults are provided)
-MAX_RETRIES=3
-VALIDATION_TIMEOUT=300
+### Optional Configuration
 
-# Code Style Settings (optional - defaults are provided)
-PYTHON_FORMATTER=black
-LINTER=flake8
-TEST_COMMAND=pytest
+- `AZURE_OPENAI_API_VERSION`: API version (default: 2024-02-01)
+- `AZURE_OPENAI_DEPLOYMENT_NAME`: Deployment name (default: gpt-4o)
 
-# Azure Function Settings (optional - defaults are provided)
-AZURE_FUNCTION_TIMEOUT=600
+### Legacy OpenAI Configuration (Optional)
 
-# Logging (optional - defaults are provided)
-LOG_LEVEL=INFO
-LOG_FORMAT=%(asctime)s - %(name)s - %(levelname)s - %(message)s
-```
+- `OPENAI_API_KEY`: Your OpenAI API key (for backward compatibility)
+- `OPENAI_MODEL`: OpenAI model to use (default: gpt-4)
+- `REGION`: Azure region (default: swedencentral)
 
-### 2. Load Environment Variables
+## Security Best Practices
 
-To load the environment variables, add this to your Python files:
+1. **Never commit `.env` files to version control**
+
+   - The `.env` file is already in `.gitignore`
+   - Double-check with: `git status` (should not show `.env`)
+
+2. **Use different `.env` files for different environments:**
+
+   - `.env.development`
+   - `.env.staging`
+   - `.env.production`
+
+3. **Rotate API keys regularly**
+   - Update your Azure OpenAI keys periodically
+   - Test the new keys before deploying
+
+## Validation
+
+The application automatically validates required environment variables on startup. If any required variables are missing, you'll see specific error messages indicating which variables need to be set.
+
+Run the validation manually:
 
 ```python
-from dotenv import load_dotenv
-load_dotenv()  # This loads the .env file
+from config import Config
+errors = Config.validate_config()
+if errors:
+    for error in errors:
+        print(f"Error: {error}")
+else:
+    print("Configuration is valid!")
 ```
 
-### 3. Security Notes
+## Environment File Structure
 
-- **NEVER** commit `.env` files to version control
-- The `.env` file is already added to `.gitignore`
-- Only commit `.env.example` or documentation files like this one
-- Keep your API keys secure and rotate them regularly
+Your `.env` file should look like this:
 
-### 4. Azure Functions Local Development
+```env
+# Azure OpenAI Configuration
+AZURE_OPENAI_API_KEY=your_actual_api_key_here
+AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
 
-For Azure Functions, you can also use `local.settings.json`:
-
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "",
-    "FUNCTIONS_WORKER_RUNTIME": "python",
-    "AZURE_OPENAI_API_KEY": "your_azure_openai_api_key_here",
-    "AZURE_OPENAI_ENDPOINT": "https://ai-tum-dev-se-001.openai.azure.com/",
-    "AZURE_OPENAI_API_VERSION": "2024-02-01",
-    "AZURE_OPENAI_DEPLOYMENT_NAME": "gpt-4o"
-  }
-}
+# Optional configurations...
+AI_MAX_TOKENS=4000
+AI_TEMPERATURE=0.1
 ```
 
-### 5. Production Deployment
+## Troubleshooting
 
-For production deployments:
+- **Import Error**: Make sure you've activated your virtual environment
+- **Missing Variables**: Check that all required variables are set in your `.env` file
+- **Permission Issues**: Ensure the `.env` file has appropriate read permissions
 
-- Use Azure Key Vault or similar secret management services
-- Set environment variables in your hosting platform
-- Never hardcode secrets in source code
+## Azure Function Deployment
+
+For Azure Functions, set environment variables in the Azure portal:
+
+1. Go to your Function App
+2. Navigate to Configuration > Application settings
+3. Add each environment variable manually
+4. Don't forget to save and restart the function app
